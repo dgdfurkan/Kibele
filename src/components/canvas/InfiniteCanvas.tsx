@@ -107,14 +107,11 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
         return () => container.removeEventListener('wheel', handleWheel);
     }, [scale, position, minScale, maxScale]);
 
+    const [lastTouchPos, setLastTouchPos] = useState<{ x: number; y: number } | null>(null);
+    const [lastTouchDist, setLastTouchDist] = useState<number | null>(null);
+
     // --- Mouse Drag Handling (Pan) ---
     const handleMouseDown = (e: React.MouseEvent) => {
-        // Pan active on:
-        // 1. Middle Click
-        // 2. Space + Left Click
-        // 3. Left Click on background (User request: "boşluğa basılı tutarak gezebiliyorum")
-        // We rely on child elements stopping propagation if they are interactive.
-
         if (isSpacePressed || e.button === 1 || e.button === 0) {
             setIsDragging(true);
             setLastMousePos({ x: e.clientX, y: e.clientY });
@@ -135,15 +132,81 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
         setIsDragging(false);
     };
 
+    // --- Touch Handling (Mobile) ---
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (e.touches.length === 1) {
+            setLastTouchPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+            setLastTouchDist(null);
+        } else if (e.touches.length === 2) {
+            const dist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            setLastTouchDist(dist);
+            setLastTouchPos({
+                x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+                y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+            });
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        if (e.touches.length === 1 && lastTouchPos) {
+            const dx = e.touches[0].clientX - lastTouchPos.x;
+            const dy = e.touches[0].clientY - lastTouchPos.y;
+            setPosition(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+            setLastTouchPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+        } else if (e.touches.length === 2 && lastTouchDist && lastTouchPos) {
+            const dist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+            // Zoom
+            const zoomFactor = dist / lastTouchDist;
+            const newScale = Math.min(Math.max(minScale, scale * zoomFactor), maxScale);
+
+            // Pan towards center of pinch
+            const rect = container.getBoundingClientRect();
+            const mouseX = centerX - rect.left;
+            const mouseY = centerY - rect.top;
+
+            const worldX = (mouseX - position.x) / scale;
+            const worldY = (mouseY - position.y) / scale;
+
+            const newX = mouseX - worldX * newScale + (centerX - lastTouchPos.x);
+            const newY = mouseY - worldY * newScale + (centerY - lastTouchPos.y);
+
+            setScale(newScale);
+            setPosition({ x: newX, y: newY });
+            setLastTouchDist(dist);
+            setLastTouchPos({ x: centerX, y: centerY });
+        }
+    };
+
+    const handleTouchEnd = () => {
+        setLastTouchPos(null);
+        setLastTouchDist(null);
+    };
+
     return (
         <div
             ref={containerRef}
-            className={`w-full h-screen overflow-hidden bg-[#101622] relative select-none ${isDragging ? 'cursor-grabbing' : (isSpacePressed ? 'cursor-grab' : 'cursor-default')
+            className={`w-full h-screen overflow-hidden bg-[#101622] relative select-none touch-none ${isDragging ? 'cursor-grabbing' : (isSpacePressed ? 'cursor-grab' : 'cursor-default')
                 }`}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
         >
             {/* Dot Grid Layer - True Infinite via Background Position */}
             <div
