@@ -4,6 +4,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  /* Prevent page scroll, force canvas scroll */
+  overscroll-behavior: none;
+  /* Prevent mac bounce effect */
+}
+
 @theme {
   --color-primary: #3c6b7c;
   --color-background-light: #fafaf9;

@@ -19,6 +19,9 @@ export const Home: React.FC = () => {
     const [isDragging, setIsDragging] = useState(false);
     const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
 
+    // Ref for the canvas container to attach non-passive listener
+    const canvasRef = React.useRef<HTMLDivElement>(null);
+
     useEffect(() => {
         const fetchProjects = async () => {
             try {
@@ -42,7 +45,38 @@ export const Home: React.FC = () => {
         setIsIngestionOpen(false);
     };
 
+    // Better Wheel Handler specific ref pattern to avoid re-binding:
+    const onWheelRef = React.useRef((e: WheelEvent) => { });
+    onWheelRef.current = (e: WheelEvent) => {
+        e.preventDefault();
+        if (e.ctrlKey || e.metaKey) {
+            const zoomSensitivity = 0.001;
+            // We need current scale. simplest way without re-binding is functional update with checks?
+            // Or just use the state in dependency.
+            // Let's stick to functional update approach for correctness without closure staleness
+            setScale(prevScale => {
+                const newScale = Math.min(Math.max(0.1, prevScale - e.deltaY * zoomSensitivity), 5);
+                return newScale;
+            });
+        } else {
+            setPosition(prev => ({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }));
+        }
+    };
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const handler = (e: WheelEvent) => onWheelRef.current(e);
+        canvas.addEventListener('wheel', handler, { passive: false });
+        return () => canvas.removeEventListener('wheel', handler);
+    }, []);
+
+
     const handleMouseDown = (e: React.MouseEvent) => {
+        // Allow interacting with child elements (cards) without dragging canvas immediately
+        // if target is not the canvas itself or the overlay
+        if ((e.target as HTMLElement).closest('.project-card')) return;
+
         setIsDragging(true);
         setLastMousePos({ x: e.clientX, y: e.clientY });
     };
@@ -57,21 +91,6 @@ export const Home: React.FC = () => {
 
     const handleMouseUp = () => {
         setIsDragging(false);
-    };
-
-    const handleWheel = (e: React.WheelEvent) => {
-        // Zoom on wheel (optional: check for metaKey/ctrlKey if user refers to trackpad pinch usually mapped to Ctrl+Wheel)
-        // For "Infinite Canvas" usually wheel is pan or zoom. Let's make it zoom.
-        if (e.ctrlKey || e.metaKey) {
-            e.preventDefault();
-            const zoomSensitivity = 0.001;
-            const newScale = Math.min(Math.max(0.1, scale - e.deltaY * zoomSensitivity), 5);
-            setScale(newScale);
-        } else {
-            // Pan on wheel if no key pressed (natural scroll) or ignore if we want only drag
-            // User requested "Drag/Pan" mostly.
-            setPosition(prev => ({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }));
-        }
     };
 
     const filteredProjects = projects.filter(p =>
@@ -92,30 +111,31 @@ export const Home: React.FC = () => {
 
             {/* Infinite Canvas Container */}
             <div
-                className="w-full h-screen overflow-hidden bg-transparent cursor-grab active:cursor-grabbing relative"
+                ref={canvasRef}
+                className="w-full h-screen overflow-hidden bg-[#101622] cursor-grab active:cursor-grabbing relative touch-none"
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
-                onWheel={handleWheel}
             >
                 {/* Transform Layer */}
                 <div
                     style={{
                         transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
                         transformOrigin: '50% 50%',
-                        transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+                        willChange: 'transform',
+                        transition: isDragging ? 'none' : 'transform 0.1s cubic-bezier(0.1, 0.7, 1.0, 0.1)'
                     }}
-                    className="w-full h-full absolute inset-0 flex items-center justify-center p-20"
+                    className="w-full h-full absolute inset-0 flex items-center justify-center pointer-events-none"
                 >
-                    {/* Grid Content */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 min-w-[80vw] pointer-events-none">
+                    {/* Content Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 min-w-[80vw] pointer-events-auto origin-center">
                         {loading ? (
                             <div className="col-span-full text-center text-gray-400">Loading...</div>
                         ) : filteredProjects.length === 0 ? (
                             <div className="col-span-full text-center text-gray-400/50 text-xl font-light">Canvas Empty</div>
                         ) : filteredProjects.map((project) => (
-                            <div key={project.id} className="pointer-events-auto transform transition-transform hover:scale-105">
+                            <div key={project.id} className="project-card transform transition-transform hover:scale-105 duration-200">
                                 <ProjectCard project={project} />
                             </div>
                         ))}
