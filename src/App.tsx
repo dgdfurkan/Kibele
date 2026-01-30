@@ -3,15 +3,26 @@ import { LoginPage } from './pages/Login';
 import { Home } from './pages/Home';
 import { ProjectDetail } from './pages/ProjectDetail';
 
-function App() {
+const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
 
+function App() {
   return (
     <Router basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={isAuthenticated ? <Home /> : <Navigate to="/login" />} />
-        <Route path="/project/:id" element={isAuthenticated ? <ProjectDetail /> : <Navigate to="/login" />} />
+        <Route path="/" element={
+          <ProtectedRoute>
+            <Home />
+          </ProtectedRoute>
+        } />
+        <Route path="/project/:id" element={
+          <ProtectedRoute>
+            <ProjectDetail />
+          </ProtectedRoute>
+        } />
       </Routes>
     </Router>
   );
