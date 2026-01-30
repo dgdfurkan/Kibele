@@ -19,6 +19,9 @@ export const Home: React.FC = () => {
     // UI State for Navigator (Read-only representation of Canvas State)
     const [canvasState, setCanvasState] = useState({ scale: 1, position: { x: 0, y: 0 } });
 
+    // Command State (To jump canvas to position)
+    const [targetPosition, setTargetPosition] = useState<{ x: number; y: number } | undefined>(undefined);
+
     useEffect(() => {
         const fetchProjects = async () => {
             try {
@@ -54,6 +57,7 @@ export const Home: React.FC = () => {
                 onAddClick={() => setIsIngestionOpen(true)}
                 scale={canvasState.scale}
                 position={canvasState.position}
+                onNavigate={setTargetPosition}
             />
 
             <IngestionOverlay
@@ -62,7 +66,10 @@ export const Home: React.FC = () => {
                 onSuccess={handleProjectAdded}
             />
 
-            <InfiniteCanvas onTransformChange={setCanvasState}>
+            <InfiniteCanvas
+                onTransformChange={setCanvasState}
+                programmaticPosition={targetPosition}
+            >
                 <div className="w-full h-full absolute top-0 left-0">
                     {loading ? (
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center gap-4">

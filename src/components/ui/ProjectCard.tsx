@@ -15,7 +15,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            whileHover={{ y: -5, scale: 1.01 }}
+            whileHover={{ y: -5 }} // Removed scale: 1.01
             transition={{ duration: 0.3 }}
             onClick={() => navigate(`/project/${project.id}`)}
             className="break-inside-avoid mb-6 group relative rounded-xl overflow-hidden shadow-[0_12px_40px_-12px_rgba(60,107,124,0.12)] hover:shadow-[0_20px_50px_-12px_rgba(60,107,124,0.25)] cursor-pointer bg-white dark:bg-[#25282a] border border-transparent dark:border-white/5"

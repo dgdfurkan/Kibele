@@ -6,6 +6,7 @@ interface InfiniteCanvasProps {
     minScale?: number;
     maxScale?: number;
     onTransformChange?: (transform: { scale: number; position: { x: number; y: number } }) => void;
+    programmaticPosition?: { x: number; y: number }; // New prop for external control
 }
 
 export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
@@ -13,11 +14,19 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
     initialScale = 1,
     minScale = 0.1,
     maxScale = 5,
-    onTransformChange
+    onTransformChange,
+    programmaticPosition
 }) => {
     // State
     const [scale, setScale] = useState(initialScale);
     const [position, setPosition] = useState({ x: 0, y: 0 });
+
+    // Sync from external control (Navigator)
+    useEffect(() => {
+        if (programmaticPosition) {
+            setPosition(programmaticPosition);
+        }
+    }, [programmaticPosition]);
     const [isSpacePressed, setIsSpacePressed] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
@@ -65,7 +74,7 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
             e.preventDefault();
 
             // Zoom Sensitivity
-            const zoomSensitivity = 0.001;
+            const zoomSensitivity = 0.0005; // Reduced from 0.001 for smoother control
             const delta = -e.deltaY * zoomSensitivity;
 
             // Calculate new scale with limits
