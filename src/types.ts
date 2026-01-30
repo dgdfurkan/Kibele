@@ -7,7 +7,6 @@ export interface Project {
     image: string;
     aspectRatio: string;
     client?: string; // Optional for details
-    client?: string; // Optional for details
     description?: string; // Optional for details
     position?: { x: number; y: number }; // Canvas Coordinates
 }
