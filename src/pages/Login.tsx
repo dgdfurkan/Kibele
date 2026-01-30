@@ -2,28 +2,46 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../services/firebase';
 
 export const LoginPage: React.FC = () => {
     const navigate = useNavigate();
-    const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [isRegistering, setIsRegistering] = useState(false);
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError('');
 
+        // Map username to email address
+        const email = `${username.toLowerCase().replace(/[^a-z0-9]/g, '')}@kibele.app`;
+
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            if (isRegistering) {
+                await createUserWithEmailAndPassword(auth, email, password);
+                // After registration, user is signed in automatically
+            } else {
+                await signInWithEmailAndPassword(auth, email, password);
+            }
+
             localStorage.setItem('isAuthenticated', 'true');
             navigate('/');
         } catch (err: any) {
-            console.error("Login failed", err);
-            setError('Invalid credentials');
+            console.error("Auth failed", err);
+            if (err.code === 'auth/weak-password') {
+                setError('Password should be at least 6 characters');
+            } else if (err.code === 'auth/email-already-in-use') {
+                setError('Username already taken');
+            } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+                setError('Invalid username or password');
+            } else {
+                setError(err.message || 'Authentication failed');
+            }
         } finally {
             setLoading(false);
         }
@@ -81,19 +99,19 @@ export const LoginPage: React.FC = () => {
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">Enter your personal workspace</p>
                     </div>
 
-                    <form className="space-y-5" onSubmit={handleLogin}>
+                    <form className="space-y-5" onSubmit={handleAuth}>
                         <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider pl-1" htmlFor="email">
-                                Email
+                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider pl-1" htmlFor="username">
+                                Username
                             </label>
                             <div className="relative group">
                                 <input
-                                    id="email" type="email" placeholder="kibele@workspace.com"
-                                    value={email} onChange={(e) => setEmail(e.target.value)}
+                                    id="username" type="text" placeholder="kibele"
+                                    value={username} onChange={(e) => setUsername(e.target.value)}
                                     className="block w-full rounded-lg border-gray-200 dark:border-gray-700 bg-white dark:bg-black/20 text-slate-900 dark:text-white px-4 py-3 focus:border-primary focus:ring-primary/20 dark:focus:ring-primary/20 transition-colors shadow-sm text-sm"
                                 />
                                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
-                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>email</span>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>person</span>
                                 </div>
                             </div>
                         </div>
@@ -103,7 +121,7 @@ export const LoginPage: React.FC = () => {
                                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider" htmlFor="password">
                                     Password
                                 </label>
-                                <a href="#" className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors">Forgot?</a>
+                                {!isRegistering && <a href="#" className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors">Forgot?</a>}
                             </div>
                             <div className="relative group">
                                 <input
@@ -126,15 +144,24 @@ export const LoginPage: React.FC = () => {
                             disabled={loading}
                             className={`w-full flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-lg font-bold text-sm hover:bg-slate-800 dark:hover:bg-gray-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 mt-2 ${loading ? 'opacity-70 cursor-wait' : ''}`}
                         >
-                            <span>{loading ? 'Signing In...' : 'Sign In'}</span>
+                            <span>{loading ? 'Processing...' : (isRegistering ? 'Create Account' : 'Sign In')}</span>
                             {!loading && <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span>}
                         </button>
                     </form>
 
                     <div className="mt-8 pt-6 border-t border-gray-100 dark:border-white/5 text-center">
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                            New to the studio? <a href="#" className="text-primary hover:underline decoration-2 underline-offset-2">Request access</a>
-                        </p>
+                        <button
+                            onClick={() => {
+                                setIsRegistering(!isRegistering);
+                                setError('');
+                            }}
+                            className="text-xs text-gray-500 dark:text-gray-400 font-medium hover:text-primary transition-colors focus:outline-none"
+                        >
+                            {isRegistering
+                                ? "Already have an account? Sign In"
+                                : <span>New to the studio? <span className="text-primary hover:underline decoration-2 underline-offset-2">Request access</span></span>
+                            }
+                        </button>
                     </div>
                 </div>
 
