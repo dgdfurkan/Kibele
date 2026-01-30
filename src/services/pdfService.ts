@@ -87,86 +87,100 @@ export const extractPDFData = async (file: File): Promise<PDFMetadata> => {
 
     // 3. Generate Visual Palette (Extract actual images)
     const images: string[] = [];
-    const imageHashes = new Set<number>(); // Simple deduplication
-    const pagesForImages = Math.min(pdf.numPages, 10);
+    const imageHashes = new Set<string>();
+    const pagesForImages = Math.min(pdf.numPages, 20); // Scan more pages
 
-    for (let i = 1; i <= pagesForImages && images.length < 12; i++) {
+    // Common PDF.js Operator codes if OPS is not directly accessible
+    // paintImageXObject: 82, paintInlineImageXObject: 83, paintImageMaskXObject: 84
+    const IMAGE_OPS = [82, 83, 84];
+
+    for (let i = 1; i <= pagesForImages && images.length < 24; i++) {
         try {
             const page = await pdf.getPage(i);
             const ops = await page.getOperatorList();
 
             for (let j = 0; j < ops.fnArray.length; j++) {
-                // Check for paintImageXObject (101 is the constant for it in pdfjs common)
-                // Using names directly if possible or the constant
-                if (ops.fnArray[j] === (pdfjs as any).OPS?.paintImageXObject ||
-                    ops.fnArray[j] === (pdfjs as any).OPS?.paintInlineImageXObject) {
-
+                const fn = ops.fnArray[j];
+                if (IMAGE_OPS.includes(fn)) {
                     const imgKey = ops.argsArray[j][0];
-                    const imgData = await new Promise((resolve) => {
-                        page.commonObjs.has(imgKey) ? resolve(page.commonObjs.get(imgKey)) :
-                            page.objs.has(imgKey) ? resolve(page.objs.get(imgKey)) : resolve(null);
-                    });
+                    let imgData: any = null;
 
-                    if (imgData && (imgData as any).width && (imgData as any).height) {
-                        const { width, height, data } = imgData as any;
+                    try {
+                        imgData = page.objs.get(imgKey) || page.commonObjs.get(imgKey);
+                    } catch (e) {
+                        continue;
+                    }
 
-                        // Deduplicate roughly by width/height/first pixel for performance
-                        const hash = width * height + data[0] + data[10];
-                        if (imageHashes.has(hash)) continue;
-                        imageHashes.add(hash);
+                    if (!imgData) continue;
 
-                        const canvas = document.createElement('canvas');
+                    let canvas = document.createElement('canvas');
+                    let ctx = canvas.getContext('2d');
+                    if (!ctx) continue;
+
+                    // Case A: ImageBitmap / bitmap available (Modern pdf.js)
+                    if (imgData.bitmap) {
+                        const bitmap = imgData.bitmap;
+                        canvas.width = bitmap.width;
+                        canvas.height = bitmap.height;
+                        ctx.drawImage(bitmap, 0, 0);
+                    }
+                    // Case B: Raw pixel data
+                    else if (imgData.width && imgData.height && imgData.data) {
+                        const { width, height, data } = imgData;
                         canvas.width = width;
                         canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        if (ctx) {
-                            const imageData = ctx.createImageData(width, height);
-                            // pdf.js image data can be RGB, RGBA or Grayscale. createImgData is RGBA.
-                            // The conversion depends on the kind of data. Simple check:
-                            if (data.length === width * height * 4) {
-                                imageData.data.set(data);
-                            } else if (data.length === width * height * 3) {
-                                for (let k = 0, l = 0; k < data.length; k += 3, l += 4) {
-                                    imageData.data[l] = data[k];
-                                    imageData.data[l + 1] = data[k + 1];
-                                    imageData.data[l + 2] = data[k + 2];
-                                    imageData.data[l + 3] = 255;
-                                }
-                            } else {
-                                // Fallback for grayscale or other formats if needed
-                                continue;
-                            }
-                            ctx.putImageData(imageData, 0, 0);
+                        const imageData = ctx.createImageData(width, height);
 
-                            // Only add if it's a reasonably large image (not an icon/divider)
-                            if (width > 100 && height > 100) {
-                                images.push(canvas.toDataURL('image/jpeg', 0.8));
+                        // Handle different kinds (RGB: 1, RGBA: 2, Grayscale: 3)
+                        if (data.length === width * height * 4) {
+                            imageData.data.set(data);
+                        } else if (data.length === width * height * 3) {
+                            for (let k = 0, l = 0; k < data.length; k += 3, l += 4) {
+                                imageData.data[l] = data[k];
+                                imageData.data[l + 1] = data[k + 1];
+                                imageData.data[l + 2] = data[k + 2];
+                                imageData.data[l + 3] = 255;
                             }
+                        } else {
+                            continue;
                         }
+                        ctx.putImageData(imageData, 0, 0);
+                    } else {
+                        continue;
+                    }
+
+                    // Simple deduplication by dimensions and sample
+                    const hash = `${canvas.width}x${canvas.height}`;
+                    if (imageHashes.has(hash)) continue;
+
+                    // Filter icons and small dividers
+                    if (canvas.width > 120 && canvas.height > 120) {
+                        imageHashes.add(hash);
+                        images.push(canvas.toDataURL('image/jpeg', 0.85));
                     }
                 }
-                if (images.length >= 12) break;
+                if (images.length >= 24) break;
             }
         } catch (e) {
-            console.warn(`Image extraction failed on page ${i}:`, e);
+            console.warn(`Extraction failed on page ${i}:`, e);
         }
     }
 
-    // Fallback: If no images found, use page thumbnails (as it was before)
+    // Fallback ONLY if absolutely zero images found
     if (images.length === 0) {
-        const maxThumbnails = Math.min(pdf.numPages, 6);
-        for (let i = 1; i <= maxThumbnails; i++) {
+        const pagesToThumb = Math.min(pdf.numPages, 6);
+        for (let i = 1; i <= pagesToThumb; i++) {
             try {
                 const page = await pdf.getPage(i);
-                const viewport = page.getViewport({ scale: 0.5 });
+                const viewport = page.getViewport({ scale: 0.8 });
                 const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d', { alpha: false });
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                if (context) {
-                    context.fillStyle = '#ffffff';
-                    context.fillRect(0, 0, canvas.width, canvas.height);
-                    await page.render({ canvasContext: context, viewport }).promise;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    await page.render({ canvasContext: ctx, viewport }).promise;
                     images.push(canvas.toDataURL('image/jpeg', 0.8));
                 }
             } catch (e) { }
