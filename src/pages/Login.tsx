@@ -2,20 +2,30 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../services/firebase';
+
 export const LoginPage: React.FC = () => {
     const navigate = useNavigate();
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (username === 'kibele' && password === '123') {
-            // TODO: Implement proper auth state management
+        setLoading(true);
+        setError('');
+
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
             localStorage.setItem('isAuthenticated', 'true');
             navigate('/');
-        } else {
+        } catch (err: any) {
+            console.error("Login failed", err);
             setError('Invalid credentials');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -73,17 +83,17 @@ export const LoginPage: React.FC = () => {
 
                     <form className="space-y-5" onSubmit={handleLogin}>
                         <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider pl-1" htmlFor="username">
-                                Username
+                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider pl-1" htmlFor="email">
+                                Email
                             </label>
                             <div className="relative group">
                                 <input
-                                    id="username" type="text" placeholder="eren.sukibel"
-                                    value={username} onChange={(e) => setUsername(e.target.value)}
+                                    id="email" type="email" placeholder="kibele@workspace.com"
+                                    value={email} onChange={(e) => setEmail(e.target.value)}
                                     className="block w-full rounded-lg border-gray-200 dark:border-gray-700 bg-white dark:bg-black/20 text-slate-900 dark:text-white px-4 py-3 focus:border-primary focus:ring-primary/20 dark:focus:ring-primary/20 transition-colors shadow-sm text-sm"
                                 />
                                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
-                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>person</span>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>email</span>
                                 </div>
                             </div>
                         </div>
@@ -111,9 +121,13 @@ export const LoginPage: React.FC = () => {
                             <p className="text-red-500 text-xs text-center font-bold">{error}</p>
                         )}
 
-                        <button type="submit" className="w-full flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-lg font-bold text-sm hover:bg-slate-800 dark:hover:bg-gray-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 mt-2">
-                            <span>Sign In</span>
-                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className={`w-full flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-lg font-bold text-sm hover:bg-slate-800 dark:hover:bg-gray-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 mt-2 ${loading ? 'opacity-70 cursor-wait' : ''}`}
+                        >
+                            <span>{loading ? 'Signing In...' : 'Sign In'}</span>
+                            {!loading && <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span>}
                         </button>
                     </form>
 
