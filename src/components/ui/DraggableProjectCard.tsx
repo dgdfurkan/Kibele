@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Project } from '../../types';
+import type { Project } from '../../types';
 import { ProjectCard } from './ProjectCard';
 import { updateProjectPosition } from '../../services/projects';
 

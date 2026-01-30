@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/layout/Layout';
-import { ProjectCard } from '../components/ui/ProjectCard'; // Keep for type or remove if unused (ProjectCard used inside Draggable)
+// ProjectCard is used inside DraggableProjectCard, so we don't need it here directly anymore
+// import { ProjectCard } from '../components/ui/ProjectCard'; 
 import { DraggableProjectCard } from '../components/ui/DraggableProjectCard';
 import { FloatingHeader } from '../components/ui/FloatingHeader';
 import { FloatingControls } from '../components/ui/FloatingControls';
