@@ -3,7 +3,7 @@ import { LoginPage } from './pages/Login';
 import { Home } from './pages/Home';
 import { ProjectDetail } from './pages/ProjectDetail';
 
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
