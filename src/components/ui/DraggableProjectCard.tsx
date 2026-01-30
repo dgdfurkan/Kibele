@@ -7,12 +7,14 @@ interface DraggableProjectCardProps {
     project: Project;
     scale: number;
     initialPosition?: { x: number; y: number };
+    onPositionChange?: (id: string, pos: { x: number; y: number }) => void;
 }
 
 export const DraggableProjectCard: React.FC<DraggableProjectCardProps> = ({
     project,
     scale,
-    initialPosition
+    initialPosition,
+    onPositionChange
 }) => {
     // Local state for immediate feedback
     const [position, setPosition] = useState(initialPosition || { x: Math.random() * 500, y: Math.random() * 500 });
@@ -71,6 +73,10 @@ export const DraggableProjectCard: React.FC<DraggableProjectCardProps> = ({
                 const dist = Math.sqrt(Math.pow(muE.clientX - dragStartRef.current.x, 2) + Math.pow(muE.clientY - dragStartRef.current.y, 2));
                 if (dist > 5) { // 5px threshold
                     updateProjectPosition(project.id, { x: finalX, y: finalY });
+                    // Optimistic update for parent
+                    if (onPositionChange) {
+                        onPositionChange(project.id, { x: finalX, y: finalY });
+                    }
                 }
             }
         };
