@@ -7,7 +7,7 @@ function App() {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
 
   return (
-    <Router>
+    <Router basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={isAuthenticated ? <Home /> : <Navigate to="/login" />} />
