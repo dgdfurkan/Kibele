@@ -183,35 +183,50 @@ export const IngestionOverlay: React.FC<IngestionOverlayProps> = ({ isOpen, onCl
 
                                     {/* Visual Palette */}
                                     {extractionComplete && extractedData && (
-                                        <div className="mt-4">
+                                        <div className="mt-8">
                                             <div className="flex items-center justify-between mb-4">
-                                                <h3 className="text-white text-xs font-bold tracking-widest uppercase opacity-40 ml-1">Visual Palette</h3>
-                                                {extractedData.thumbnails.length === 0 && (
-                                                    <span className="text-[10px] text-red-400 font-bold uppercase tracking-tighter">No Images Found</span>
-                                                )}
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="text-white text-[10px] font-bold tracking-[0.2em] uppercase opacity-40 ml-1">Visual Palette</h3>
+                                                    <span className="text-[10px] text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-full">{extractedData.thumbnails.length} Assets Found</span>
+                                                </div>
                                             </div>
-                                            <div className="grid grid-cols-3 gap-3">
+
+                                            <div className="flex gap-4 overflow-x-auto pb-4 pt-2 -mx-1 px-1 snap-x mandatory scroll-smooth no-scrollbar">
                                                 {extractedData.thumbnails.map((thumb, idx) => (
                                                     <motion.div
                                                         key={idx}
-                                                        whileHover={{ scale: 1.02 }}
+                                                        whileHover={{ y: -4, scale: 1.02 }}
                                                         whileTap={{ scale: 0.98 }}
                                                         onClick={() => setSelectedThumbnail(thumb)}
-                                                        className={`relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${selectedThumbnail === thumb ? 'border-primary shadow-[0_0_15px_rgba(19,91,236,0.3)]' : 'border-white/10 hover:border-white/30'}`}
+                                                        className={`relative flex-shrink-0 w-[180px] aspect-[4/3] rounded-xl overflow-hidden cursor-pointer border-2 transition-all snap-start ${selectedThumbnail === thumb
+                                                                ? 'border-primary ring-4 ring-primary/20 bg-primary/5'
+                                                                : 'border-white/5 hover:border-white/20'
+                                                            }`}
                                                     >
                                                         <img
                                                             src={thumb}
-                                                            alt={`Page ${idx + 1}`}
+                                                            alt={`Asset ${idx + 1}`}
                                                             className="w-full h-full object-cover"
                                                             onError={(e) => {
                                                                 (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=400';
                                                             }}
                                                         />
+
                                                         {selectedThumbnail === thumb && (
-                                                            <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow-lg">
-                                                                <span className="material-symbols-outlined text-white text-[12px] font-bold">check</span>
-                                                            </div>
+                                                            <motion.div
+                                                                initial={{ opacity: 0 }}
+                                                                animate={{ opacity: 1 }}
+                                                                className="absolute inset-0 bg-primary/10 flex items-center justify-center backdrop-blur-[1px]"
+                                                            >
+                                                                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg border border-white/20">
+                                                                    <span className="material-symbols-outlined text-white text-sm font-bold">check</span>
+                                                                </div>
+                                                            </motion.div>
                                                         )}
+
+                                                        <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <p className="text-[8px] text-white/60 font-medium tracking-widest uppercase">Asset #{idx + 1}</p>
+                                                        </div>
                                                     </motion.div>
                                                 ))}
                                             </div>
