@@ -64,34 +64,33 @@ export const Home: React.FC = () => {
 
             <InfiniteCanvas onTransformChange={setCanvasState}>
                 <div className="w-full h-full absolute top-0 left-0">
-                    <div className="w-full h-full absolute top-0 left-0">
-                        {loading ? (
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center gap-4">
-                                <img
-                                    src={`${import.meta.env.BASE_URL}logo.svg`}
-                                    alt="Kibele Logo"
-                                    className="w-16 h-16 opacity-50 animate-pulse"
-                                />
-                            </div>
-                        ) : filteredProjects.length === 0 ? (
-                            null // Canvas Empty - kept clean as requested
-                        ) : filteredProjects.map((project, index) => {
-                            // Default positions for initial layout (simple grid-like scatter)
-                            const defaultPos = {
-                                x: (index % 4) * 400 + 100,
-                                y: Math.floor(index / 4) * 450 + 100
-                            };
+                    {loading ? (
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center gap-4">
+                            <img
+                                src={`${import.meta.env.BASE_URL}logo.svg`}
+                                alt="Kibele Logo"
+                                className="w-16 h-16 opacity-50 animate-pulse"
+                            />
+                        </div>
+                    ) : filteredProjects.length === 0 ? (
+                        null // Canvas Empty - kept clean as requested
+                    ) : filteredProjects.map((project, index) => {
+                        // Default positions for initial layout (simple grid-like scatter)
+                        const defaultPos = {
+                            x: (index % 4) * 400 + 100,
+                            y: Math.floor(index / 4) * 450 + 100
+                        };
 
-                            return (
-                                <DraggableProjectCard
-                                    key={project.id}
-                                    project={project}
-                                    scale={canvasState.scale}
-                                    initialPosition={project.position || defaultPos}
-                                />
-                            );
-                        })}
-                    </div>
+                        return (
+                            <DraggableProjectCard
+                                key={project.id}
+                                project={project}
+                                scale={canvasState.scale}
+                                initialPosition={project.position || defaultPos}
+                            />
+                        );
+                    })}
+                </div>
             </InfiniteCanvas>
         </Layout>
     );
