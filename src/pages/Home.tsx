@@ -46,7 +46,7 @@ export const Home: React.FC = () => {
     };
 
     // Better Wheel Handler specific ref pattern to avoid re-binding:
-    const onWheelRef = React.useRef((e: WheelEvent) => { });
+    const onWheelRef = React.useRef((_e: WheelEvent) => { });
     onWheelRef.current = (e: WheelEvent) => {
         e.preventDefault();
         if (e.ctrlKey || e.metaKey) {
@@ -101,7 +101,12 @@ export const Home: React.FC = () => {
     return (
         <Layout>
             <FloatingHeader onSearch={setSearchQuery} />
-            <FloatingControls onAddClick={() => setIsIngestionOpen(true)} scale={scale} setScale={setScale} />
+            <FloatingControls
+                onAddClick={() => setIsIngestionOpen(true)}
+                scale={scale}
+                setScale={setScale}
+                position={position}
+            />
 
             <IngestionOverlay
                 isOpen={isIngestionOpen}

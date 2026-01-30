@@ -4,9 +4,10 @@ interface FloatingControlsProps {
     onAddClick: () => void;
     scale?: number;
     setScale?: (scale: number) => void;
+    position?: { x: number; y: number };
 }
 
-export const FloatingControls: React.FC<FloatingControlsProps> = ({ onAddClick, scale = 1 }) => {
+export const FloatingControls: React.FC<FloatingControlsProps> = ({ onAddClick, scale = 1, position = { x: 0, y: 0 } }) => {
     return (
         <>
             {/* Bottom Right Floating Action Button (FAB) */}
@@ -39,7 +40,7 @@ export const FloatingControls: React.FC<FloatingControlsProps> = ({ onAddClick, 
                                 left: '50%',
                                 width: `${Math.max(20, 100 / scale)}%`,
                                 height: `${Math.max(20, 60 / scale)}%`,
-                                transform: 'translate(-50%, -50%)'
+                                transform: `translate(-50%, -50%) translate(${-position.x * 0.05}px, ${-position.y * 0.05}px)`
                             }}
                         ></div>
                     </div>
