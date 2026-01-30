@@ -63,30 +63,28 @@ export const Home: React.FC = () => {
             />
 
             <InfiniteCanvas onTransformChange={setCanvasState}>
-                <InfiniteCanvas onTransformChange={setCanvasState}>
-                    <div className="w-full h-full absolute top-0 left-0">
-                        {loading ? (
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-gray-400 pointer-events-none">Loading...</div>
-                        ) : filteredProjects.length === 0 ? (
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-gray-400/50 text-xl font-light pointer-events-none select-none">Canvas Empty</div>
-                        ) : filteredProjects.map((project, index) => {
-                            // Default positions for initial layout (simple grid-like scatter)
-                            const defaultPos = {
-                                x: (index % 4) * 400 + 100,
-                                y: Math.floor(index / 4) * 450 + 100
-                            };
+                <div className="w-full h-full absolute top-0 left-0">
+                    {loading ? (
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-gray-400 pointer-events-none">Loading...</div>
+                    ) : filteredProjects.length === 0 ? (
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-gray-400/50 text-xl font-light pointer-events-none select-none">Canvas Empty</div>
+                    ) : filteredProjects.map((project, index) => {
+                        // Default positions for initial layout (simple grid-like scatter)
+                        const defaultPos = {
+                            x: (index % 4) * 400 + 100,
+                            y: Math.floor(index / 4) * 450 + 100
+                        };
 
-                            return (
-                                <DraggableProjectCard
-                                    key={project.id}
-                                    project={project}
-                                    scale={canvasState.scale}
-                                    initialPosition={project.position || defaultPos}
-                                />
-                            );
-                        })}
-                    </div>
-                </InfiniteCanvas>
+                        return (
+                            <DraggableProjectCard
+                                key={project.id}
+                                project={project}
+                                scale={canvasState.scale}
+                                initialPosition={project.position || defaultPos}
+                            />
+                        );
+                    })}
+                </div>
             </InfiniteCanvas>
         </Layout>
     );

@@ -67,13 +67,27 @@ export const DraggableProjectCard: React.FC<DraggableProjectCardProps> = ({
                 const finalX = startPosRef.current.x + dx;
                 const finalY = startPosRef.current.y + dy;
 
-                // Debounce or just save? For single move, just save.
-                updateProjectPosition(project.id, { x: finalX, y: finalY });
+                // If moved significantly, updating position. 
+                const dist = Math.sqrt(Math.pow(muE.clientX - dragStartRef.current.x, 2) + Math.pow(muE.clientY - dragStartRef.current.y, 2));
+                if (dist > 5) { // 5px threshold
+                    updateProjectPosition(project.id, { x: finalX, y: finalY });
+                }
             }
         };
 
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp);
+    };
+
+    // Use Capture to prevent click if dragged
+    const handleClickCapture = (e: React.MouseEvent) => {
+        if (dragStartRef.current) {
+            const dist = Math.sqrt(Math.pow(e.clientX - dragStartRef.current.x, 2) + Math.pow(e.clientY - dragStartRef.current.y, 2));
+            if (dist > 5) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }
     };
 
     return (
@@ -86,6 +100,7 @@ export const DraggableProjectCard: React.FC<DraggableProjectCardProps> = ({
                 transition: isDragging ? 'none' : 'transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s',
             }}
             onMouseDown={handleMouseDown}
+            onClickCapture={handleClickCapture}
         >
             <ProjectCard project={project} />
         </div>

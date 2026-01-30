@@ -159,7 +159,6 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
             {/* HUD / Indicators (Optional debug) */}
             <div className="fixed bottom-4 left-4 text-white/30 text-xs pointer-events-none font-mono z-[60]">
                 {Math.round(scale * 100)}% | {Math.round(position.x)}, {Math.round(position.y)}
-                {!isSpacePressed && <span className="ml-2 opacity-50">(Hold SPACE to Pan)</span>}
             </div>
 
             {/* Export specific props if needed via context or ref in future */}
