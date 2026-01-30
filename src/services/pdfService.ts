@@ -85,35 +85,91 @@ export const extractPDFData = async (file: File): Promise<PDFMetadata> => {
 
     if (fontSet.size === 0) fontSet.add("Helvetica");
 
-    // 3. Generate Visual Palette
-    const thumbnails: string[] = [];
-    const maxThumbnails = Math.min(pdf.numPages, 6);
+    // 3. Generate Visual Palette (Extract actual images)
+    const images: string[] = [];
+    const imageHashes = new Set<number>(); // Simple deduplication
+    const pagesForImages = Math.min(pdf.numPages, 10);
 
-    for (let i = 1; i <= maxThumbnails; i++) {
+    for (let i = 1; i <= pagesForImages && images.length < 12; i++) {
         try {
             const page = await pdf.getPage(i);
-            const viewport = page.getViewport({ scale: 0.5 }); // Balanced scale
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d', { alpha: false }); // Better performance
+            const ops = await page.getOperatorList();
 
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
+            for (let j = 0; j < ops.fnArray.length; j++) {
+                // Check for paintImageXObject (101 is the constant for it in pdfjs common)
+                // Using names directly if possible or the constant
+                if (ops.fnArray[j] === (pdfjs as any).OPS?.paintImageXObject ||
+                    ops.fnArray[j] === (pdfjs as any).OPS?.paintInlineImageXObject) {
 
-            if (context) {
-                // Ensure white background (essential for transparent PDFs)
-                context.fillStyle = '#ffffff';
-                context.fillRect(0, 0, canvas.width, canvas.height);
+                    const imgKey = ops.argsArray[j][0];
+                    const imgData = await new Promise((resolve) => {
+                        page.commonObjs.has(imgKey) ? resolve(page.commonObjs.get(imgKey)) :
+                            page.objs.has(imgKey) ? resolve(page.objs.get(imgKey)) : resolve(null);
+                    });
 
-                await page.render({
-                    canvasContext: context,
-                    viewport,
-                    intent: 'display' // Optimization
-                }).promise;
+                    if (imgData && (imgData as any).width && (imgData as any).height) {
+                        const { width, height, data } = imgData as any;
 
-                thumbnails.push(canvas.toDataURL('image/jpeg', 0.85));
+                        // Deduplicate roughly by width/height/first pixel for performance
+                        const hash = width * height + data[0] + data[10];
+                        if (imageHashes.has(hash)) continue;
+                        imageHashes.add(hash);
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                            const imageData = ctx.createImageData(width, height);
+                            // pdf.js image data can be RGB, RGBA or Grayscale. createImgData is RGBA.
+                            // The conversion depends on the kind of data. Simple check:
+                            if (data.length === width * height * 4) {
+                                imageData.data.set(data);
+                            } else if (data.length === width * height * 3) {
+                                for (let k = 0, l = 0; k < data.length; k += 3, l += 4) {
+                                    imageData.data[l] = data[k];
+                                    imageData.data[l + 1] = data[k + 1];
+                                    imageData.data[l + 2] = data[k + 2];
+                                    imageData.data[l + 3] = 255;
+                                }
+                            } else {
+                                // Fallback for grayscale or other formats if needed
+                                continue;
+                            }
+                            ctx.putImageData(imageData, 0, 0);
+
+                            // Only add if it's a reasonably large image (not an icon/divider)
+                            if (width > 100 && height > 100) {
+                                images.push(canvas.toDataURL('image/jpeg', 0.8));
+                            }
+                        }
+                    }
+                }
+                if (images.length >= 12) break;
             }
         } catch (e) {
-            console.error(`Thumbnail generation failed for page ${i}:`, e);
+            console.warn(`Image extraction failed on page ${i}:`, e);
+        }
+    }
+
+    // Fallback: If no images found, use page thumbnails (as it was before)
+    if (images.length === 0) {
+        const maxThumbnails = Math.min(pdf.numPages, 6);
+        for (let i = 1; i <= maxThumbnails; i++) {
+            try {
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: 0.5 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d', { alpha: false });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                if (context) {
+                    context.fillStyle = '#ffffff';
+                    context.fillRect(0, 0, canvas.width, canvas.height);
+                    await page.render({ canvasContext: context, viewport }).promise;
+                    images.push(canvas.toDataURL('image/jpeg', 0.8));
+                }
+            } catch (e) { }
         }
     }
 
@@ -121,7 +177,7 @@ export const extractPDFData = async (file: File): Promise<PDFMetadata> => {
         title,
         pageCount: pdf.numPages,
         fonts: Array.from(fontSet).slice(0, 10),
-        thumbnails,
+        thumbnails: images,
         creationDate
     };
 };
