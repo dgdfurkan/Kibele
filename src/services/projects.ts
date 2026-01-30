@@ -88,7 +88,7 @@ export const getProjects = async (): Promise<Project[]> => {
 
         // If no projects in DB, return mock data
         if (projects.length === 0) {
-            return MOCK_PROJECTS;
+            return [];
         }
         return projects;
     } catch (error) {

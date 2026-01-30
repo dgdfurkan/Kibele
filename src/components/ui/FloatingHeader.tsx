@@ -10,7 +10,7 @@ export const FloatingHeader: React.FC<FloatingHeaderProps> = ({ onSearch }) => {
             <div className="w-full max-w-5xl flex items-center justify-between gap-4 pointer-events-auto">
                 {/* Branding / Logo (Left) */}
                 <div className="hidden md:flex items-center gap-3 opacity-90 hover:opacity-100 transition-opacity cursor-pointer">
-                    <img src="/logo.svg" alt="Kibele Logo" className="h-8 w-auto" />
+                    <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="Kibele Logo" className="h-8 w-auto" />
                 </div>
 
                 {/* Central Floating Search Pill */}
