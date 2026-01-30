@@ -1,42 +1,39 @@
-import React from 'react';
+import React, { useRef } from 'react';
 
 interface FloatingControlsProps {
     onAddClick: () => void;
     scale?: number;
-    setScale?: (scale: number) => void;
     position?: { x: number; y: number };
-    setPosition?: (pos: { x: number; y: number }) => void;
+    onNavigate?: (pos: { x: number; y: number }) => void;
 }
 
-export const FloatingControls: React.FC<FloatingControlsProps> = ({ onAddClick, scale = 1, position = { x: 0, y: 0 } }) => {
-    // --- Interactive Navigator ---
-    const [isNavDragging, setIsNavDragging] = React.useState(false);
+export const FloatingControls: React.FC<FloatingControlsProps> = ({ onAddClick, scale = 1, position = { x: 0, y: 0 }, onNavigate }) => {
+    const navRef = useRef<HTMLDivElement>(null);
 
-    const handleNavMouseDown = (e: React.MouseEvent) => {
-        if (!setScale || !position || !scale) return; // Read-only if no setters
+    const handleNavClick = (e: React.MouseEvent) => {
+        if (!onNavigate || !position || !navRef.current) return;
 
-        // Calculate where they clicked relative to center of mini-map
-        handleNavMove(e);
-        setIsNavDragging(true);
+        const rect = navRef.current.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const dx = clickX - centerX;
+        const dy = clickY - centerY;
+
+        // Map is 0.05x scale of world
+        // Inverse scale = 20
+        const worldDx = dx * 20;
+        const worldDy = dy * 20;
+
+        // Subtract because moving map "view" right means shifting content left
+        onNavigate({
+            x: position.x - worldDx,
+            y: position.y - worldDy
+        });
     };
-
-    const handleNavMove = (e: { clientX: number, clientY: number, preventDefault?: () => void }) => {
-        // This logic is inverse of the canvas display
-        // Canvas offset x/y moves the content. 
-        // If I click top-left of mini-map, I want top-left of canvas content to be visible?
-        // No, the mini-map represents the viewport relative to the 'world'.
-        // Current implementation: translate(${-position.x * 0.05}px)
-        // So mini-map X = -CanvasPos.X * 0.05
-        // CanvasPos.X = -MiniMapX / 0.05
-        // CanvasPos.X = -MiniMapX * 20
-
-        // We need the rect of the mini-map container
-        // Ideally we use a Ref for the mini-map container
-    };
-
-    // Simplified: Just center on click for now, complex drag later if requested specifically.
-    // User asked "scroll yaparken dah diye büyüyor küçülüyor adam akıllı çalışsın" -> Fixed via Zoom Sensitivity.
-    // User asked "navigatorden de bir yerlere gidebileyim" -> Click to center.
 
     return (
         <>
@@ -56,9 +53,12 @@ export const FloatingControls: React.FC<FloatingControlsProps> = ({ onAddClick, 
 
             {/* Bottom Left Mini-Map / Navigator */}
             <div className="fixed left-6 bottom-6 md:left-10 md:bottom-10 z-50 hidden md:block select-none">
-                <div className="w-48 h-32 bg-white/80 dark:bg-[#1c1f21]/80 backdrop-blur-md rounded-xl border border-gray-200 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.08)] p-1.5 relative overflow-hidden group hover:bg-white dark:hover:bg-[#1c1f21] transition-colors">
-                    {/* Placeholder for now to avoid breaking build with complex logic mid-step */}
-                    <div className="w-full h-full bg-background-light dark:bg-background-dark rounded-lg relative overflow-hidden opacity-80">
+                <div
+                    ref={navRef}
+                    onClick={handleNavClick}
+                    className="w-48 h-32 bg-white/80 dark:bg-[#1c1f21]/80 backdrop-blur-md rounded-xl border border-gray-200 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.08)] p-1.5 relative overflow-hidden group hover:bg-white dark:hover:bg-[#1c1f21] transition-colors cursor-crosshair active:cursor-grabbing"
+                >
+                    <div className="w-full h-full bg-background-light dark:bg-background-dark rounded-lg relative overflow-hidden opacity-80 pointer-events-none">
                         {/* Center content representation */}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-primary/20 rounded-full blur-xl"></div>
 
