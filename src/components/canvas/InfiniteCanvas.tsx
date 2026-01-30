@@ -5,13 +5,15 @@ interface InfiniteCanvasProps {
     initialScale?: number;
     minScale?: number;
     maxScale?: number;
+    onTransformChange?: (transform: { scale: number; position: { x: number; y: number } }) => void;
 }
 
 export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
     children,
     initialScale = 1,
     minScale = 0.1,
-    maxScale = 5
+    maxScale = 5,
+    onTransformChange
 }) => {
     // State
     const [scale, setScale] = useState(initialScale);
@@ -22,6 +24,11 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
 
     // Refs
     const containerRef = useRef<HTMLDivElement>(null);
+
+    // Notify parent of changes
+    useEffect(() => {
+        onTransformChange?.({ scale, position });
+    }, [scale, position, onTransformChange]);
 
     // --- Space Key Handling ---
     useEffect(() => {

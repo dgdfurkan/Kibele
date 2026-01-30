@@ -14,6 +14,9 @@ export const Home: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
 
+    // UI State for Navigator (Read-only representation of Canvas State)
+    const [canvasState, setCanvasState] = useState({ scale: 1, position: { x: 0, y: 0 } });
+
     useEffect(() => {
         const fetchProjects = async () => {
             try {
@@ -45,12 +48,11 @@ export const Home: React.FC = () => {
     return (
         <Layout>
             <FloatingHeader onSearch={setSearchQuery} />
-            {/* Note: FloatingControls no longer needs scale/position props as InfiniteCanvas handles it internally for now. 
-                If we want the minimap to work, we'll need to lift state up or use a context. 
-                For this iteration, we focus on the Canvas interaction excellence. 
-                The user's request prioritized the Canvas mechanics specifically (Space/Pan/Zoom).
-            */}
-            <FloatingControls onAddClick={() => setIsIngestionOpen(true)} />
+            <FloatingControls
+                onAddClick={() => setIsIngestionOpen(true)}
+                scale={canvasState.scale}
+                position={canvasState.position}
+            />
 
             <IngestionOverlay
                 isOpen={isIngestionOpen}
@@ -58,7 +60,7 @@ export const Home: React.FC = () => {
                 onSuccess={handleProjectAdded}
             />
 
-            <InfiniteCanvas>
+            <InfiniteCanvas onTransformChange={setCanvasState}>
                 <div className="flex items-center justify-center min-h-[100vh] min-w-[100vw] p-20">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 pointer-events-auto">
                         {loading ? (
