@@ -21,12 +21,19 @@ export const LoginPage: React.FC = () => {
         // Map username to email address
         const email = `${username.toLowerCase().replace(/[^a-z0-9]/g, '')}@kibele.app`;
 
+        // Firebase requires min 6 chars. We pad short passwords transparently.
+        let finalPassword = password;
+        if (password.length < 6) {
+            // Pad with a fixed suffix to reach 6 chars
+            finalPassword = password + "kibele".slice(0, 6 - password.length);
+        }
+
         try {
             if (isRegistering) {
-                await createUserWithEmailAndPassword(auth, email, password);
+                await createUserWithEmailAndPassword(auth, email, finalPassword);
                 // After registration, user is signed in automatically
             } else {
-                await signInWithEmailAndPassword(auth, email, password);
+                await signInWithEmailAndPassword(auth, email, finalPassword);
             }
 
             localStorage.setItem('isAuthenticated', 'true');
