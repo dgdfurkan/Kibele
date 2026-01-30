@@ -45,6 +45,10 @@ export const Home: React.FC = () => {
         setIsIngestionOpen(false);
     };
 
+    const handlePositionUpdate = (id: string, newPos: { x: number; y: number }) => {
+        setProjects(prev => prev.map(p => p.id === id ? { ...p, position: newPos } : p));
+    };
+
     const filteredProjects = projects.filter(p =>
         p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.font.toLowerCase().includes(searchQuery.toLowerCase())
@@ -94,6 +98,7 @@ export const Home: React.FC = () => {
                                 project={project}
                                 scale={canvasState.scale}
                                 initialPosition={project.position || defaultPos}
+                                onPositionChange={handlePositionUpdate}
                             />
                         );
                     })}
