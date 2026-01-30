@@ -15,6 +15,14 @@ export const IngestionOverlay: React.FC<IngestionOverlayProps> = ({ isOpen, onCl
     const [extractionComplete, setExtractionComplete] = useState(false);
 
     useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        if (isOpen) window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [isOpen, onClose]);
+
+    useEffect(() => {
         if (file && !extractionComplete) {
             setIsProcessing(true);
             // Simulate AI Processing
