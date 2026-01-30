@@ -120,9 +120,79 @@ export const IngestionOverlay: React.FC<IngestionOverlayProps> = ({ isOpen, onCl
                             )}
                         </div>
 
-                        {/* Right: Processing / Mock Results */}
+                        {/* Right: Processing / Mock Results / Manual Entry */}
                         <div className="lg:col-span-5 flex flex-col gap-4 self-start lg:mt-20">
-                            {file && (
+                            {!file ? (
+                                <motion.div
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="bg-warm-gray/40 border border-white/10 rounded-xl p-6"
+                                >
+                                    <h3 className="text-white text-sm font-bold tracking-wider uppercase opacity-60 mb-6">Manual Entry</h3>
+
+                                    <div className="space-y-4">
+                                        <div className="space-y-1">
+                                            <label className="text-xs text-white/40 font-medium ml-1">Project Title</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Enter project name..."
+                                                className="w-full h-10 bg-black/20 border border-white/10 rounded-lg px-3 text-white text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                                                id="manual-title"
+                                            />
+                                        </div>
+                                        <div className="flex gap-4">
+                                            <div className="space-y-1 flex-1">
+                                                <label className="text-xs text-white/40 font-medium ml-1">Font</label>
+                                                <select className="w-full h-10 bg-black/20 border border-white/10 rounded-lg px-3 text-white text-sm focus:outline-none focus:border-primary/50 transition-colors appearance-none" id="manual-font">
+                                                    <option value="Helvetica">Helvetica</option>
+                                                    <option value="Futura">Futura</option>
+                                                    <option value="Garamond">Garamond</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1 flex-1">
+                                                <label className="text-xs text-white/40 font-medium ml-1">Year</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="2024"
+                                                    defaultValue="2024"
+                                                    className="w-full h-10 bg-black/20 border border-white/10 rounded-lg px-3 text-white text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                                                    id="manual-year"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8 pt-6 border-t border-white/10">
+                                        <button
+                                            onClick={async () => {
+                                                const titleInput = document.getElementById('manual-title') as HTMLInputElement;
+                                                const fontInput = document.getElementById('manual-font') as HTMLSelectElement;
+                                                const yearInput = document.getElementById('manual-year') as HTMLInputElement;
+
+                                                if (!titleInput.value) return; // Simple validation
+
+                                                try {
+                                                    await addProject({
+                                                        title: titleInput.value,
+                                                        font: fontInput.value || 'Helvetica',
+                                                        color: '#135bec', // Default
+                                                        date: yearInput.value || '2024',
+                                                        aspectRatio: 'aspect-video',
+                                                        image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDUNvqs_sebdU66YhjWqqYMlTOKw-zJbnuGmRWEtW8RjJfGp57G-18DJdT7pelfThl718I5_I-inTZxHxU1YKpiSpzHBBfDrdwz4TjlhFlVDd_UPAA8qA4KHc9IYxDl1ylgQH8sztNmkl580kXICtSx268GerZX7cDXnjNHOPplaRaWj0EbO1NU5bcl5LVBP97nUDkP_VI1G2Zngj_YjPQn9-oqmF5D5kVWLefsEFOUKQkn5D3iLuBNA7e5S8CXtxq2yalfEkmNE58'
+                                                    });
+                                                    onSuccess();
+                                                } catch (error) {
+                                                    console.error("Failed to add project", error);
+                                                }
+                                            }}
+                                            className="w-full flex items-center justify-center gap-2 rounded-lg h-12 bg-white/5 text-white text-sm font-bold tracking-wide hover:bg-white/10 transition-all border border-white/10"
+                                        >
+                                            <span>Create Project</span>
+                                            <span className="material-symbols-outlined text-sm">add</span>
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ) : (
                                 <motion.div
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
