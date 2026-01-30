@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, Timestamp, doc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import type { Project } from "../types";
 
@@ -106,6 +106,18 @@ export const addProject = async (project: Omit<Project, 'id'>) => {
         return docRef.id;
     } catch (error) {
         console.error("Error adding project:", error);
+        throw error;
+    }
+};
+
+export const updateProjectPosition = async (projectId: string, position: { x: number; y: number }) => {
+    try {
+        const projectRef = doc(db, COLLECTION_NAME, projectId);
+        await updateDoc(projectRef, {
+            position: position
+        });
+    } catch (error) {
+        console.error("Error updating project position:", error);
         throw error;
     }
 };

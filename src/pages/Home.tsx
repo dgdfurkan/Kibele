@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/layout/Layout';
-import { ProjectCard } from '../components/ui/ProjectCard';
+import { ProjectCard } from '../components/ui/ProjectCard'; // Keep for type or remove if unused (ProjectCard used inside Draggable)
+import { DraggableProjectCard } from '../components/ui/DraggableProjectCard';
 import { FloatingHeader } from '../components/ui/FloatingHeader';
 import { FloatingControls } from '../components/ui/FloatingControls';
 import { IngestionOverlay } from '../components/ingestion/IngestionOverlay';
@@ -61,19 +62,30 @@ export const Home: React.FC = () => {
             />
 
             <InfiniteCanvas onTransformChange={setCanvasState}>
-                <div className="flex items-center justify-center min-h-[100vh] min-w-[100vw] p-20">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 pointer-events-auto">
+                <InfiniteCanvas onTransformChange={setCanvasState}>
+                    <div className="w-full h-full absolute top-0 left-0">
                         {loading ? (
-                            <div className="col-span-full text-center text-gray-400">Loading...</div>
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-gray-400 pointer-events-none">Loading...</div>
                         ) : filteredProjects.length === 0 ? (
-                            <div className="col-span-full text-center text-gray-400/50 text-xl font-light">Canvas Empty</div>
-                        ) : filteredProjects.map((project) => (
-                            <div key={project.id} className="project-card transform transition-transform hover:scale-105 duration-200">
-                                <ProjectCard project={project} />
-                            </div>
-                        ))}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-gray-400/50 text-xl font-light pointer-events-none select-none">Canvas Empty</div>
+                        ) : filteredProjects.map((project, index) => {
+                            // Default positions for initial layout (simple grid-like scatter)
+                            const defaultPos = {
+                                x: (index % 4) * 400 + 100,
+                                y: Math.floor(index / 4) * 450 + 100
+                            };
+
+                            return (
+                                <DraggableProjectCard
+                                    key={project.id}
+                                    project={project}
+                                    scale={canvasState.scale}
+                                    initialPosition={project.position || defaultPos}
+                                />
+                            );
+                        })}
                     </div>
-                </div>
+                </InfiniteCanvas>
             </InfiniteCanvas>
         </Layout>
     );

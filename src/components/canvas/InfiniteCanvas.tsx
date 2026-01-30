@@ -100,11 +100,16 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
 
     // --- Mouse Drag Handling (Pan) ---
     const handleMouseDown = (e: React.MouseEvent) => {
-        // Pan only allowed if Space is pressed (or Middle click - optional, sticking to Space for now)
-        if (isSpacePressed || e.button === 1) {
+        // Pan active on:
+        // 1. Middle Click
+        // 2. Space + Left Click
+        // 3. Left Click on background (User request: "boşluğa basılı tutarak gezebiliyorum")
+        // We rely on child elements stopping propagation if they are interactive.
+
+        if (isSpacePressed || e.button === 1 || e.button === 0) {
             setIsDragging(true);
             setLastMousePos({ x: e.clientX, y: e.clientY });
-            e.preventDefault(); // Prevent text selection etc
+            e.preventDefault();
         }
     };
 
@@ -124,7 +129,7 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
     return (
         <div
             ref={containerRef}
-            className={`w-full h-screen overflow-hidden bg-[#101622] relative select-none ${isSpacePressed ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'
+            className={`w-full h-screen overflow-hidden bg-[#101622] relative select-none ${isDragging ? 'cursor-grabbing' : (isSpacePressed ? 'cursor-grab' : 'cursor-default')
                 }`}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -133,9 +138,9 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
         >
             {/* Dot Grid Layer - True Infinite via Background Position */}
             <div
-                className="absolute inset-0 pointer-events-none opacity-20 will-change-[background-position,background-size]"
+                className="absolute inset-0 pointer-events-none opacity-[0.07] will-change-[background-position,background-size]"
                 style={{
-                    backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)',
+                    backgroundImage: 'radial-gradient(#ffffff 1.5px, transparent 1.5px)',
                     backgroundSize: `${20 * scale}px ${20 * scale}px`,
                     backgroundPosition: `${position.x}px ${position.y}px`
                 }}
